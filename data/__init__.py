@@ -1,14 +1,14 @@
 import torch
-from data.MTLCC.dataloader import get_dataloader as get_mtlcc_dataloader
-from data.MTLCC.data_transforms import MTLCC_transform
-from data.France.dataloader import get_dataloader as get_france_dataloader
-from data.France.data_transforms import France_segmentation_transform
-from data.PASTIS24.dataloader import get_dataloader as get_pastis_dataloader
-from data.PASTIS24.data_transforms import PASTIS_segmentation_transform
-from utils.config_files_utils import get_params_values, read_yaml
+from deepsat.data.MTLCC.dataloader import get_dataloader as get_mtlcc_dataloader
+from deepsat.data.MTLCC.data_transforms import MTLCC_transform
+from deepsat.data.France.dataloader import get_dataloader as get_france_dataloader
+from deepsat.data.France.data_transforms import France_segmentation_transform
+from deepsat.data.PASTIS24.dataloader import get_dataloader as get_pastis_dataloader
+from deepsat.data.PASTIS24.data_transforms import PASTIS_segmentation_transform
+from deepsat.utils.config_files_utils import get_params_values, read_yaml
 
-
-DATASET_INFO = read_yaml("data/datasets.yaml")
+# TODO: Potentially fix issue
+DATASET_INFO = read_yaml("/home/hporta/code_project/wildfire-forecast/wildfire-highres-multimodal/deepsat/data/datasets.yaml")
 
 
 def get_dataloaders(config):

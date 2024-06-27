@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torchvision import transforms
 from copy import deepcopy
 import random
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 from scipy import ndimage
 
 

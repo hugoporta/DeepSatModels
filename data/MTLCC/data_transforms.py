@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torchvision import transforms, utils
 from copy import deepcopy
 import random
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 
 
 original_label_dict = {0: "unknown", 1: "sugar_beet", 2: "summer_oat", 3: "meadow", 5: "rape", 8: "hop",
