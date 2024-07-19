@@ -3,9 +3,9 @@ from torch import nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-from models.TSViT.module import Attention, PreNorm, FeedForward
+from deepsat.models.TSViT.module import Attention, PreNorm, FeedForward
 import numpy as np
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 
 
 class Transformer(nn.Module):

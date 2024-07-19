@@ -1,10 +1,10 @@
 # code from https://github.com/TUM-LMF/MTLCC-pytorch/blob/master/src/models/sequenceencoder.py
 import torch
 import torch.nn
-from models.BiConvRNN.conv_lstm import ConvLSTMCell, ConvLSTM
-from models.BiConvRNN.conv_gru import ConvGRU
+from deepsat.models.BiConvRNN.conv_lstm import ConvLSTMCell, ConvLSTM
+from deepsat.models.BiConvRNN.conv_gru import ConvGRU
 import torch.nn.functional as F
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 
 
 class BiRNNSequentialEncoderClassifier(torch.nn.Module):

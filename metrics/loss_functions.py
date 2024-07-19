@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.nn as nn
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 from copy import deepcopy
 
 

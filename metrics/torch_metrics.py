@@ -1,5 +1,5 @@
 import torch
-from metrics.numpy_metrics import get_classification_metrics
+from deepsat.metrics.numpy_metrics import get_classification_metrics
 import numpy as np
 
 

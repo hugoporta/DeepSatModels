@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils.config_files_utils import get_params_values
+from deepsat.utils.config_files_utils import get_params_values
 
 
 def conv_block(in_dim, middle_dim, out_dim):

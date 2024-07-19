@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from utils.config_files_utils import get_params_values
-from models.LocalSelfAttention.cscl import ContextSelfSimilarity, AttentionAggregate
+from deepsat.utils.config_files_utils import get_params_values
+from deepsat.models.LocalSelfAttention.cscl import ContextSelfSimilarity, AttentionAggregate
 
 
 def conv_block(in_dim, middle_dim, out_dim):

@@ -3,7 +3,7 @@ from torch import nn, einsum
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
-from models.TSViT.module import Attention, PreNorm, FeedForward
+from deepsat.models.TSViT.module import Attention, PreNorm, FeedForward
 import numpy as np
 
 
