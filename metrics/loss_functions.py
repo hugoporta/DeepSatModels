@@ -48,7 +48,22 @@ def get_loss(config, device, reduction='mean'):
             for key in loss_config['class_weights']:
                 weight[key] = loss_config['class_weights'][key]
         return torch.nn.CrossEntropyLoss(weight=weight, reduction=reduction)
-    
+
+    # Weighted Cross-Entropy Loss -----------------------------------------------------------
+    elif loss_config['loss_function'] == 'weight_cross_entropy':
+        pos_weight = config['SOLVER']['pos_weight']
+        if pos_weight is not None:
+            weight_1 = 1. / pos_weight
+            weight_2 = 1.
+            total_weight = weight_1 + weight_2
+            weight_1 = weight_1 / total_weight
+            weight_2 = weight_2 / total_weight
+            weight = torch.tensor([weight_1, weight_2], dtype=torch.float32).to(device)
+            return torch.nn.CrossEntropyLoss(weight=weight, reduction=reduction)
+
+        else:
+            return torch.nn.CrossEntropyLoss(reduction=reduction)
+
     # Masked Cross-Entropy Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'masked_cross_entropy':
         mean = reduction == 'mean'

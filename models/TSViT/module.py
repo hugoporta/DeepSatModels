@@ -85,13 +85,17 @@ class Attention(nn.Module):
             nn.Dropout(dropout)
         ) if project_out else nn.Identity()
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         # print(x.shape)
         b, n, _, h = *x.shape, self.heads
         qkv = self.to_qkv(x).chunk(3, dim=-1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=h), qkv)
         # print(q.shape, k.shape, v.shape)
         dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+
+        if mask is not None:
+            mask = mask[:, None, None, :] # B*T -> B*1*1*T and then broadcasting
+            dots.masked_fill(mask == 1, float('-inf'))
 
         attn = dots.softmax(dim=-1)
 

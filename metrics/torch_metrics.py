@@ -31,7 +31,7 @@ def get_binary_metrics(logits, labels, return_all=False, thresh=0.5, name=""):
             "%smicro_F1" % name: F1, "%smicro_IOU" % name: IOU}
     
     
-def get_mean_metrics(logits, labels, n_classes, loss, epoch=0, step=0, unk_masks=None, name=""):
+def get_mean_metrics(logits, labels, n_classes, epoch=0, step=0, unk_masks=None, name=""):
     """
     :param logits: (N, D, H, W)
     """
@@ -43,9 +43,9 @@ def get_mean_metrics(logits, labels, n_classes, loss, epoch=0, step=0, unk_masks
         unk_masks = unk_masks.reshape(-1).cpu().numpy()
     acc, precision, recall, F1, IOU = get_classification_metrics(
         predicted, labels, n_classes, unk_masks)['micro']
-    loss_ = float(loss.detach().cpu().numpy())
+    # loss_ = float(loss.detach().cpu().numpy())
     return {"%sAccuracy" % name: acc, "%sPrecision" % name: precision, "%sRecall" % name: recall,
-            "%sF1" % name: F1, "%sIOU" % name: IOU, "%sLoss" % name: loss_}
+            "%sF1" % name: F1, "%sIOU" % name: IOU} #, "%sLoss" % name: loss_}
 
 
 def get_all_metrics(predicted, labels, n_classes, unk_masks=None, name=""):
