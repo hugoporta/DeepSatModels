@@ -19,9 +19,9 @@ class Transformer(nn.Module):
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout=dropout))
             ]))
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         for attn, ff in self.layers:
-            x = attn(x) + x
+            x = attn(x, mask) + x
             x = ff(x) + x
         return self.norm(x)
 

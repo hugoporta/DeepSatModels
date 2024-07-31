@@ -19,7 +19,7 @@ class PreNorm(nn.Module):
         self.norm = nn.LayerNorm(dim)
         self.fn = fn
 
-    def forward(self, x, **kwargs):
+    def forward(self, x, mask=None, **kwargs):
         return self.fn(self.norm(x), **kwargs)
 
 
@@ -65,7 +65,7 @@ class FeedForward(nn.Module):
             nn.Dropout(dropout)
         )
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         return self.net(x)
 
 
