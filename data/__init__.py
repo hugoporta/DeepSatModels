@@ -8,7 +8,7 @@ from deepsat.data.PASTIS24.data_transforms import PASTIS_segmentation_transform
 from deepsat.utils.config_files_utils import get_params_values, read_yaml
 
 # TODO: Potentially fix issue
-DATASET_INFO = read_yaml("/home/hporta/code_project/wildfire-forecast/wildfire-highres-multimodal/deepsat/data/datasets.yaml")
+DATASET_INFO = read_yaml("./deepsat/data/datasets.yaml")
 
 
 def get_dataloaders(config):
