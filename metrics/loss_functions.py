@@ -51,7 +51,7 @@ def get_loss(config, device, reduction='mean'):
 
     # Weighted Cross-Entropy Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'weight_cross_entropy':
-        pos_weight = config['SOLVER']['pos_weight']
+        pos_weight = loss_config['pos_weight']
         if pos_weight is not None:
             weight_1 = 1. / pos_weight
             weight_2 = 1.
@@ -68,7 +68,7 @@ def get_loss(config, device, reduction='mean'):
     elif loss_config['loss_function'] == 'masked_cross_entropy':
         mean = reduction == 'mean'
         return MaskedCrossEntropyLoss(mean=mean)
-    
+
     # Focal Loss --------------------------------------------------------------------------
     elif loss_config['loss_function'] in ['focal_loss', 'masked_focal_loss']:
         gamma = get_params_values(loss_config, "gamma", 1.0)
@@ -83,7 +83,15 @@ def get_loss(config, device, reduction='mean'):
 
     # Masked Multiclass Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'masked_dice_loss':
-        return MaskedDiceLoss(reduction=reduction)
+        return MaskedDiceLoss(reduction=reduction, device=device)
+
+    # Tversky Loss -----------------------------------------------------------
+    elif loss_config['loss_function'] in ['tversky_loss', 'focal_tversky_loss']:
+        smooth = get_params_values(loss_config, "smooth", 1)
+        alpha = get_params_values(loss_config, "alpha", 0.5)
+        beta = get_params_values(loss_config, "beta", 0.5)
+        gamma = 1.0 if loss_config['loss_function'] == 'tversky_loss' else get_params_values(loss_config, "gamma", 1.0)
+        return FocalTverskyLoss(smooth=smooth, alpha=alpha, beta=beta, gamma=gamma, reduction=reduction)
 
 
 def per_class_loss(criterion, logits, labels, unk_masks, n_classes):
@@ -260,15 +268,16 @@ class MaskedFocalLoss(nn.Module):
             raise ValueError(
                 "FocalLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
 
-
+# Adapted for Binary Classification
 class MaskedDiceLoss(nn.Module):
     """
     Credits to  github.com/clcarwin/focal_loss_pytorch
     """
 
-    def __init__(self, reduction=None):
+    def __init__(self, reduction=None, device='cuda'):
         super(MaskedDiceLoss, self).__init__()
         self.reduction = reduction
+        self.device = device
 
     def forward(self, logits, ground_truth):
 
@@ -283,7 +292,7 @@ class MaskedDiceLoss(nn.Module):
         else:
             raise ValueError("ground_truth parameter for MaskedCrossEntropyLoss is either (target, mask) or (target)")
 
-        target = target.reshape(-1, 1).to(torch.int64)
+        target = target.reshape(-1).to(torch.int64)
         logits = logits.reshape(-1, logits.shape[-1])
 
         if mask is not None:
@@ -291,14 +300,16 @@ class MaskedDiceLoss(nn.Module):
             target = target[mask]
             logits = logits[mask.repeat(1, logits.shape[-1])].reshape(-1, logits.shape[-1])
 
-        target_onehot = torch.eye(logits.shape[-1])[target].to(torch.float32).cuda()  # .permute(0,3,1,2).float().cuda()
+        # target_onehot = torch.eye(logits.shape[-1]).to(self.device)[target].to(torch.float32)  # .permute(0,3,1,2).float().cuda()
         predicted_prob = F.softmax(logits, dim=-1)
+        predicted_prob_pos = predicted_prob[:, 1]
 
-        inter = (predicted_prob * target_onehot).sum(dim=-1)
-        union = predicted_prob.pow(2).sum(dim=-1) + target_onehot.sum(dim=-1)
+        inter = (predicted_prob_pos * target).sum()
+        union = predicted_prob_pos.sum() + target.sum()
 
         loss = 1 - 2 * inter / union
 
+        # Not used but kept for future reference
         if self.reduction is None:
             return loss
         elif self.reduction == "mean":
@@ -321,7 +332,7 @@ class FocalLoss(nn.Module):
         if isinstance(alpha, (float, int)): self.alpha = torch.Tensor([alpha, 1 - alpha])
         if isinstance(alpha, list): self.alpha = torch.Tensor(alpha)
         self.reduction = reduction
-        
+
     def forward(self, input, target):
         if input.dim() > 2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
@@ -350,3 +361,47 @@ class FocalLoss(nn.Module):
         else:
             raise ValueError(
                 "FocalLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
+
+
+# Tversky Loss adapted from https://www.kaggle.com/code/bigironsphere/loss-function-library-keras-pytorch
+# Specific to binary classification
+class FocalTverskyLoss(nn.Module):
+    def __init__(self, smooth=1, alpha=0.5, beta=0.5, gamma=1., reduction=None): # Default to DICE
+        super(FocalTverskyLoss, self).__init__()
+        self.smooth = smooth
+        self.beta = beta
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        if inputs.dim() > 2:
+            inputs = inputs.view(inputs.size(0), inputs.size(1), -1)  # N,C,H,W => N,C,H*W
+            inputs = inputs.transpose(1, 2)  # N,C,H*W => N,H*W,C
+            inputs = inputs.contiguous().view(-1, inputs.size(2))  # N,H*W,C => N*H*W,C
+
+        inputs = F.softmax(inputs, dim=1)
+
+        #flatten label and prediction tensors
+        targets = targets.view(-1)
+
+        #True Positives, False Positives & False Negatives in Binary case
+        TP = (inputs[:, 1] * targets).sum()
+        FP = ((1-targets) * inputs[:, 1]).sum()
+        FN = (targets * inputs[:, 0]).sum()
+
+        Tversky = (TP + self.smooth) / (TP + self.alpha*FP + self.beta*FN + self.smooth)
+        loss = (1 - Tversky)**self.gamma
+
+        # Not used but kept for future reference
+        if self.reduction is None:
+            return loss
+        elif self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        else:
+            raise ValueError(
+                "TverskyLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
