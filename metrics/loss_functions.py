@@ -51,6 +51,7 @@ def get_loss(config, device, reduction='mean'):
 
     # Weighted Cross-Entropy Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'weight_cross_entropy':
+        label_smoothing = get_params_values(loss_config, "label_smoothing", 0.0)
         pos_weight = loss_config['pos_weight']
         if pos_weight is not None:
             weight_1 = 1. / pos_weight
@@ -59,10 +60,10 @@ def get_loss(config, device, reduction='mean'):
             weight_1 = weight_1 / total_weight
             weight_2 = weight_2 / total_weight
             weight = torch.tensor([weight_1, weight_2], dtype=torch.float32).to(device)
-            return torch.nn.CrossEntropyLoss(weight=weight, reduction=reduction)
+            return torch.nn.CrossEntropyLoss(weight=weight, reduction=reduction, label_smoothing=label_smoothing)
 
         else:
-            return torch.nn.CrossEntropyLoss(reduction=reduction)
+            return torch.nn.CrossEntropyLoss(reduction=reduction, label_smoothing=label_smoothing)
 
     # Masked Cross-Entropy Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'masked_cross_entropy':
@@ -318,7 +319,7 @@ class MaskedDiceLoss(nn.Module):
             return loss.sum()
         else:
             raise ValueError(
-                "FocalLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
+                "DiceLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
 
 
 class FocalLoss(nn.Module):

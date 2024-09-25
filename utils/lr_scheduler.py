@@ -9,6 +9,8 @@ import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from timm.scheduler.step_lr import StepLRScheduler
 from timm.scheduler.scheduler import Scheduler
+from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
+# from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 
 def build_scheduler(config, optimizer, n_iter_per_epoch):
@@ -28,6 +30,50 @@ def build_scheduler(config, optimizer, n_iter_per_epoch):
             cycle_limit=int(config['SOLVER']['num_cycles']),
             t_in_epochs=False,
         )
+
+    return lr_scheduler
+
+"""
+def build_scheduler_light(config, optimizer, n_iter_per_epoch, interval):
+
+    if interval == "step":
+        warmup_epochs = config['SOLVER']['num_warmup_epochs'] * n_iter_per_epoch
+        max_epochs = config['SOLVER']['num_epochs'] * n_iter_per_epoch
+    else:
+        warmup_epochs = config['SOLVER']['num_warmup_epochs']
+        max_epochs = config['SOLVER']['num_epochs']
+
+    lr_scheduler = None
+    if config['SOLVER']['lr_scheduler'] == 'cosine':
+        lr_scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer,
+            warmup_epochs=warmup_epochs,
+            warmup_start_lr=float(config['SOLVER']['lr_start']),
+            max_epochs=max_epochs,
+            eta_min=float(config['SOLVER']['lr_min']),
+            last_epoch=-1,
+        )
+
+    return lr_scheduler"""
+
+def build_scheduler_pytorch(config, optimizer, n_iter_per_epoch, interval):
+    if interval == "step":
+        warmup_epochs = config['SOLVER']['num_warmup_epochs'] * n_iter_per_epoch
+        max_epochs = config['SOLVER']['num_epochs'] * n_iter_per_epoch
+    else:
+        warmup_epochs = config['SOLVER']['num_warmup_epochs']
+        max_epochs = config['SOLVER']['num_epochs']
+
+    start_factor = config['SOLVER']['lr_start'] / config["SOLVER"]["lr_base"]
+
+    # Warm-up phase: linear increase in learning rate
+    warmup_scheduler = LinearLR(optimizer, start_factor=start_factor, end_factor=1.0, total_iters=warmup_epochs)
+
+    # Cosine annealing phase
+    cosine_scheduler = CosineAnnealingLR(optimizer, T_max=max_epochs - warmup_epochs, eta_min=config['SOLVER']['lr_min'])
+
+    # Combine the two schedulers using SequentialLR
+    lr_scheduler = SequentialLR(optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs])
 
     return lr_scheduler
 
