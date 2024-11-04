@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -93,6 +94,26 @@ def get_loss(config, device, reduction='mean'):
         beta = get_params_values(loss_config, "beta", 0.5)
         gamma = 1.0 if loss_config['loss_function'] == 'tversky_loss' else get_params_values(loss_config, "gamma", 1.0)
         return FocalTverskyLoss(smooth=smooth, alpha=alpha, beta=beta, gamma=gamma, reduction=reduction)
+
+    # Combined Loss -----------------------------------------------------------
+    elif loss_config['loss_function'] == 'combined_dice_ce':
+        loss_fns = [MaskedDiceLoss(reduction=reduction, device=device)]
+        label_smoothing = get_params_values(loss_config, "label_smoothing", 0.0)
+        pos_weight = loss_config['pos_weight']
+        if pos_weight is not None:
+            weight_1 = 1. / pos_weight
+            weight_2 = 1.
+            total_weight = weight_1 + weight_2
+            weight_1 = weight_1 / total_weight
+            weight_2 = weight_2 / total_weight
+            weight = torch.tensor([weight_1, weight_2], dtype=torch.float32).to(device)
+            loss_fns.append(torch.nn.CrossEntropyLoss(weight=weight, reduction=reduction, label_smoothing=label_smoothing))
+
+        else:
+            loss_fns.append(torch.nn.CrossEntropyLoss(reduction=reduction, label_smoothing=label_smoothing))
+
+        weights = get_params_values(loss_config, "loss_weights", [0.5, 0.5])
+        return CombinedLoss(loss_fns, weights)
 
 
 def per_class_loss(criterion, logits, labels, unk_masks, n_classes):
@@ -406,3 +427,16 @@ class FocalTverskyLoss(nn.Module):
         else:
             raise ValueError(
                 "TverskyLoss: reduction parameter not in list of acceptable values [\"mean\", \"sum\", None]")
+
+
+class CombinedLoss(nn.Module):
+    def __init__(self, loss_fns: List[nn.Module], weights: List[float]):
+        super(CombinedLoss, self).__init__()
+        self.loss_fns = loss_fns
+        self.weights = weights
+
+    def forward(self, inputs, targets):
+        loss = 0
+        for i, loss_fn in enumerate(self.loss_fns):
+            loss += self.weights[i] * loss_fn(inputs, targets)
+        return loss

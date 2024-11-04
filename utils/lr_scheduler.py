@@ -7,7 +7,7 @@
 
 import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler
-from timm.scheduler.step_lr import StepLRScheduler
+# from timm.scheduler.step_lr import StepLRScheduler
 from timm.scheduler.scheduler import Scheduler
 from torch.optim.lr_scheduler import SequentialLR, LinearLR, CosineAnnealingLR
 # from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
