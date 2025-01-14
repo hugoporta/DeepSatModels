@@ -450,7 +450,7 @@ class TSViTDown(nn.Module):
         self.patch_size = model_config['patch_size']
         self.num_patches_1d = self.image_size//self.patch_size
         self.num_classes = model_config['num_classes']
-        self.num_frames = model_config['max_seq_len']
+        # self.num_frames = model_config['max_seq_len']
         self.dim = model_config['dim']
         if 'temporal_depth' in model_config:
             self.temporal_depth = model_config['temporal_depth']
