@@ -85,7 +85,8 @@ def get_loss(config, device, reduction='mean'):
 
     # Masked Multiclass Loss -----------------------------------------------------------
     elif loss_config['loss_function'] == 'masked_dice_loss':
-        return MaskedDiceLoss(reduction=reduction, device=device)
+        label_smoothing = get_params_values(loss_config, "label_smoothing", 0.0)
+        return MaskedDiceLoss(reduction=reduction, device=device, label_smoothing=label_smoothing)
 
     # Tversky Loss -----------------------------------------------------------
     elif loss_config['loss_function'] in ['tversky_loss', 'focal_tversky_loss']:
@@ -190,7 +191,7 @@ class MaskedCrossEntropyLoss(torch.nn.Module):
         """
         super(MaskedCrossEntropyLoss, self).__init__()
         self.mean = mean
-    
+
     def forward(self, logits, ground_truth):
         """
             Args:
@@ -215,7 +216,7 @@ class MaskedCrossEntropyLoss(torch.nn.Module):
             target, mask = ground_truth
         else:
             raise ValueError("ground_truth parameter for MaskedCrossEntropyLoss is either (target, mask) or (target)")
-        
+
         if mask is not None:
             mask_flat = mask.reshape(-1, 1)  # (N*H*W x 1)
             nclasses = logits.shape[-1]
@@ -296,10 +297,11 @@ class MaskedDiceLoss(nn.Module):
     Credits to  github.com/clcarwin/focal_loss_pytorch
     """
 
-    def __init__(self, reduction=None, device='cuda'):
+    def __init__(self, reduction=None, label_smoothing=0., device='cuda'):
         super(MaskedDiceLoss, self).__init__()
         self.reduction = reduction
         self.device = device
+        self.label_smoothing = label_smoothing
 
     def forward(self, logits, ground_truth):
 
@@ -322,12 +324,22 @@ class MaskedDiceLoss(nn.Module):
             target = target[mask]
             logits = logits[mask.repeat(1, logits.shape[-1])].reshape(-1, logits.shape[-1])
 
-        # target_onehot = torch.eye(logits.shape[-1]).to(self.device)[target].to(torch.float32)  # .permute(0,3,1,2).float().cuda()
+        # Apply label smoothing if specified
+        if self.label_smoothing > 0.0:
+            num_classes = logits.shape[-1]
+            smoothing_value = self.label_smoothing / (num_classes - 1)
+            target_onehot = torch.full((target.size(0), num_classes), smoothing_value, device=self.device)
+            target_onehot.scatter_(1, target.unsqueeze(1), 1.0 - self.label_smoothing)
+        else:
+            # Standard one-hot encoding if no label smoothing
+            target_onehot = F.one_hot(target, num_classes=logits.shape[-1]).to(torch.float32)
+
         predicted_prob = F.softmax(logits, dim=-1)
         predicted_prob_pos = predicted_prob[:, 1]
+        target_pos = target_onehot[:, 1]
 
-        inter = (predicted_prob_pos * target).sum()
-        union = predicted_prob_pos.sum() + target.sum()
+        inter = (predicted_prob_pos * target_pos).sum()
+        union = predicted_prob_pos.sum() + target_pos.sum()
 
         loss = 1 - 2 * inter / union
 
