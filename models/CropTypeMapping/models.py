@@ -10,7 +10,7 @@ given by:
 Changes to allow this are still in progess
 """
 from torchvision import models
-import torchfcn
+# import torchfcn
 
 from models.CropTypeMapping.constants import *
 from models.CropTypeMapping.modelling.baselines import make_rf_model
@@ -253,29 +253,30 @@ def make_bidir_clstm_model(input_size, hidden_dims, lstm_kernel_sizes, conv_kern
     return model
 
 
-def make_fcn_model(n_class, n_channel, freeze=True):
-    """ Defines a FCN8s model
-    Args: 
-      n_class - (int) number of classes to predict
-      n_channel - (int) number of channels in input
-      freeze - (bool) whether to use pre-trained weights
-                TODO: unfreeze after x epochs of training
 
-    Returns: 
-      returns the model!
-    """
+#def make_fcn_model(n_class, n_channel, freeze=True):
+#    """ Defines a FCN8s model
+#    Args: 
+#      n_class - (int) number of classes to predict
+#      n_channel - (int) number of channels in input
+#      freeze - (bool) whether to use pre-trained weights
+#                TODO: unfreeze after x epochs of training
+
+#    Returns: 
+#      returns the model!
+#    """
     ## load pretrained model
-    fcn8s_pretrained_model=torch.load(torchfcn.models.FCN8s.download())
-    fcn8s = FCN8(n_class, n_channel)
-    fcn8s.load_state_dict(fcn8s_pretrained_model,strict=False)
-    
-    if freeze:
-        ## Freeze the parameter you do not want to tune
-        for param in fcn8s.parameters():
-            if torch.sum(param==0)==0:
-                param.requires_grad = False
-    
-    return fcn8s
+#    fcn8s_pretrained_model=torch.load(torchfcn.models.FCN8s.download())
+#    fcn8s = FCN8(n_class, n_channel)
+#    fcn8s.load_state_dict(fcn8s_pretrained_model,strict=False)
+#    
+#    if freeze:
+#        ## Freeze the parameter you do not want to tune
+#        for param in fcn8s.parameters():
+#            if torch.sum(param==0)==0:
+#                param.requires_grad = False
+#    
+#    return fcn8s
 
 def make_UNet_model(n_class, num_bands_dict, late_feats_for_fcn=False, pretrained=True, use_planet=False, resize_planet=False):
     """ Defines a U-Net model
